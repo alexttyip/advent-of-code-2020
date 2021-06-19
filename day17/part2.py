@@ -4,8 +4,7 @@ import numpy as np
 
 np.set_printoptions(threshold=sys.maxsize)
 
-size = 20
-offsets = np.array(np.meshgrid([-1, 0, 1], [-1, 0, 1], [-1, 0, 1])).T.reshape(-1, 3)
+offsets = np.array(np.meshgrid([-1, 0, 1], [-1, 0, 1], [-1, 0, 1], [-1, 0, 1])).T.reshape(-1, 4)
 
 
 def main():
@@ -18,15 +17,18 @@ def main():
 
 
 def read():
-    space = np.zeros((size, size, size), dtype=np.int64)
-
     file = open("input.txt", "r")
     lines = file.read().splitlines()
     file.close()
 
-    height_offset = size // 2 - len(lines) // 2
-    width_offset = size // 2 - len(lines[0]) // 2
+    size = len(lines) + 2
+
+    space = np.zeros([size] * 4, dtype=np.int64)
+
+    height_offset = 1
+    width_offset = 1
     z = size // 2
+    w = size // 2
 
     i = 0
     while i < len(lines):
@@ -36,7 +38,7 @@ def read():
             char = lines[i][j]
 
             if char == '#':
-                space[z, i + height_offset, j + width_offset] = 1
+                space[w, z, i + height_offset, j + width_offset] = 1
             j += 1
         i += 1
 
@@ -44,29 +46,27 @@ def read():
 
 
 def cycle(space):
-    new_space = np.zeros((size, size, size), dtype=np.int64)
+    size = space.shape[0]
+    new_space = np.zeros([size + 2] * 4, dtype=np.int64)
 
-    for iz in range(size):
-        for iy in range(size):
-            for ix in range(size):
-                is_active = check_neighbors(space, iz, iy, ix)
-                new_space[iz, iy, ix] = 1 if is_active else 0
+    for iw in range(size):
+        for iz in range(size):
+            for iy in range(size):
+                for ix in range(size):
+                    is_active = check_neighbors(space, size, iw, iz, iy, ix)
+                    new_space[iw + 1, iz + 1, iy + 1, ix + 1] = 1 if is_active else 0
     return new_space
 
 
-def check_neighbors(space, *indexes):
+def check_neighbors(space, size, *indexes):
     count = 0
     for offset in offsets:
         index = indexes + offset
-        if np.array_equal(offset, [0, 0, 0]):
+        if np.array_equal(offset, [0] * 4):
             continue
 
         if np.min(index) < 0 or np.max(index) >= size:
-            if space[tuple(indexes)] == 1:
-                print("OUT OF BOUNDS")
-                sys.exit()
-            else:
-                continue
+            continue
 
         if space[tuple(index)] == 1:
             count += 1
